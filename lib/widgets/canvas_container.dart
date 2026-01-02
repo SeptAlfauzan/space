@@ -132,11 +132,6 @@ class DrawingPainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
     final double verticeSize = 4;
     // Paint for edges
-    final linePaint =
-        Paint()
-          ..color = edgeColor ?? color
-          ..strokeWidth = 2.0
-          ..style = PaintingStyle.stroke;
 
     // Paint for vertices
     final pointPaint =
@@ -146,6 +141,14 @@ class DrawingPainter extends CustomPainter {
 
     // Draw edges
     for (var edge in edges) {
+      final firstEdgeOnBack = vertices[edge[0]].z > 0;
+      final lastEdgeOnBack = vertices[edge[1]].z > 0;
+      final alpha = firstEdgeOnBack && lastEdgeOnBack ? 80 : 255;
+      final linePaint =
+          Paint()
+            ..color = edgeColor?.withAlpha(alpha) ?? color.withAlpha(alpha)
+            ..strokeWidth = 2.0
+            ..style = PaintingStyle.stroke;
       final p1 = project(vertices[edge[0]], center);
       final p2 = project(vertices[edge[1]], center);
       canvas.drawLine(p1, p2, linePaint);
