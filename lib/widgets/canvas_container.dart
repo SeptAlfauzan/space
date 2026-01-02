@@ -9,25 +9,58 @@ class CanvasContainer extends StatefulWidget {
   const CanvasContainer({super.key});
 
   @override
-  State<CanvasContainer> createState() => _CanvasContainerState();
+  State<CanvasContainer> createState() => CanvasContainerState();
 }
 
-class _CanvasContainerState extends State<CanvasContainer>
+class CanvasContainerState extends State<CanvasContainer>
     with SingleTickerProviderStateMixin {
   final int durationMs = 20000;
-
+  bool _lockXAxis = false;
+  bool _lockYAxis = false;
   late Shape3D shape;
   late AnimationController _controller;
 
   double xPos = 0;
   double yPos = 0;
 
+  void changeShape(Shape3D newShape) {
+    setState(() {
+      shape = newShape;
+      _resetPositions();
+    });
+  }
+
+  void resetRotationAngle() {
+    setState(() {
+      _resetPositions();
+    });
+  }
+
+  void _resetPositions() {
+    xPos = 0;
+    yPos = 0;
+  }
+
+  bool toggleLockXAxis() {
+    setState(() {
+      _lockXAxis = !_lockXAxis;
+    });
+    return _lockXAxis;
+  }
+
+  bool toggleLockYAxis() {
+    setState(() {
+      _lockYAxis = !_lockYAxis;
+    });
+    return _lockYAxis;
+  }
+
   @override
   void initState() {
     super.initState();
 
     // shape = Shape3D.rocket().rotateZ(-math.pi / 4);
-    shape = Shape3D.cube();
+    shape = Shape3D.sphere();
 
     _controller = AnimationController(
       duration: Duration(milliseconds: durationMs),
@@ -59,6 +92,10 @@ class _CanvasContainerState extends State<CanvasContainer>
     return Pos(x: normalizeX, y: normalizeY);
   }
 
+  double _getRotationAngle(double pos) {
+    return pos * 2 * math.pi;
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
@@ -70,21 +107,36 @@ class _CanvasContainerState extends State<CanvasContainer>
           detail.globalPosition.dx,
           detail.globalPosition.dy,
         );
-        setState(() {
-          // Normalize to range 0.0 - 1.0
-          // xPos = detail.globalPosition.dx / screenSize.width;
-          // yPos = detail.globalPosition.dy / screenSize.height;
-          xPos += (normalizePos.x * 0.005);
-          yPos += (normalizePos.y * 0.005);
-        });
+
+        if (!_lockXAxis && !_lockYAxis) {
+          setState(() {
+            // Normalize to range 0.0 - 1.0
+            // xPos = detail.globalPosition.dx / screenSize.width;
+            // yPos = detail.globalPosition.dy / screenSize.height;
+            xPos += (normalizePos.x * 0.005);
+            yPos += (normalizePos.y * 0.005);
+          });
+        } else {
+          if (_lockXAxis && !_lockYAxis) {
+            setState(() {
+              yPos += (normalizePos.y * 0.005);
+            });
+          }
+
+          if (_lockYAxis && !_lockXAxis) {
+            setState(() {
+              xPos += (normalizePos.x * 0.005);
+            });
+          }
+        }
       },
       child: AnimatedBuilder(
         animation: _controller,
         builder: (context, child) {
           // double animationValue = _controller.value;
           // Rotate the shape based on normalized position
-          double angleY = xPos * 2 * math.pi; // Full rotation on X drag
-          double angleX = yPos * 2 * math.pi; // Full rotation on Y drag
+          double angleY = _getRotationAngle(xPos); // Full rotation on X drag
+          double angleX = _getRotationAngle(yPos); // Full rotation on Y drag
           final animatedShape = shape.rotateX(angleX).rotateY(angleY);
           return Center(
             child: CustomPaint(
